@@ -1,0 +1,143 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  # push:
+  #   branches:
+  #     - 'CX-17569'  # Only run on this specific branch
+
+jobs:
+  branch-naming:
+    name: Branch Naming Convention
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/CX-17569' || github.event_name == 'pull_request'  # Run on PR or specific branch
+    steps:
+      - name: Check branch name
+        run: |
+          BRANCH_NAME="${{ github.head_ref || github.ref_name }}"
+          if ! echo "$BRANCH_NAME" | grep -E "^CX-[0-9]+"; then
+            echo "❌ Branch name must follow the pattern: CX-123"
+            exit 1
+          fi
+          echo "✅ Branch name follows convention"
+
+  linear-ticket:
+    name: Linear Ticket Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Validate Linear ticket in commits
+        run: |
+          if ! git log --format=%s origin/${{ github.base_ref }}..${{ github.head_ref }} | grep -qE 'CX-[0-9]+'; then
+            echo "❌ Commit messages must contain a Linear ticket (e.g., CX-123)"
+            exit 1
+          fi
+          echo "✅ Linear ticket found in commits"
+
+  pr-template:
+    name: PR Template Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR description
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          REQUIRED_SECTIONS=("Ticket Reference:" "Changes:" "Testing:")
+          
+          for section in "${REQUIRED_SECTIONS[@]}"; do
+            if [[ ! "$PR_BODY" =~ $section ]]; then
+              echo "❌ PR description must include section: $section"
+              exit 1
+            fi
+          done
+          echo "✅ PR template is properly filled"
+
+  code-review:
+    name: Code Review Requirements
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Check CODEOWNERS
+        run: |
+          if [ ! -f ".github/CODEOWNERS" ]; then
+            echo "❌ CODEOWNERS file is missing"
+            exit 1
+          fi
+          echo "✅ CODEOWNERS file exists"
+
+  lint-format:
+    name: Linting and Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run ESLint
+        run: nCX eslint . --max-warnings 0
+        
+      - name: Check Prettier formatting
+        run: nCX prettier --check .
+
+  test-coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        
+      - name: Check coverage thresholds
+        run: |
+          COVERAGE=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct')
+          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+            echo "❌ Test coverage ($COVERAGE%) is below 80%"
+            exit 1
+          fi
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run SAST scan
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+          
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        
+      - name: Run dependency scan
+        run: |
+          npm audit
+          # Optional: Use more comprehensive tools like Snyk
+          # nCX snyk test
+
+  final-status:
+    name: Final Status Check
+    needs: [branch-naming, linear-ticket, pr-template, code-review, lint-format, test-coverage, security-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check all jobs status
+        run: echo "✅ All PR checks passed successfully!" 
