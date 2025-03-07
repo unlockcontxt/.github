@@ -1,17 +1,16 @@
-## Ticket Reference:
-CX-
+## Description
+[Description of changes]
 
-## Changes:
-- [ ] Description of changes...
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
 
-## Testing:
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Manual testing performed
+## Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated
+- [ ] Manually tested
 
-## Checklist:
-- [ ] Code follows style guidelines
-- [ ] Self-review performed
-- [ ] Documentation updated
-- [ ] No new warnings introduced
-- [ ] Security implications considered 
+## Impact Analysis
+- [ ] Impacted areas

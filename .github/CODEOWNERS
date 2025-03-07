@@ -1,12 +1,13 @@
-# Default owners for everything
-*       @team-leads
+# Default owners for everything
+*       @team-leads
 
-# Frontend specific
-/frontend/  @frontend-team
+/configuration-profile-backend/* @BackendLead
 
-# Backend specific
-/backend/   @backend-team
+# Frontend specific files
+/frontend/  @frontend-team
 
-# Infrastructure
-*.yml       @devops-team
-Dockerfile  @devops-team 
+# Backend specific files
+/backend/   @backend-team
+
+# Infrastructure files
+/.github/   @devops-team
