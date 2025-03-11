@@ -1,0 +1,20 @@
+name: PR Trigger
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  trigger-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call PR Checks
+        uses: ./.github/workflows/pr-checks.yml
+        with:
+          pr_title: ${{ github.event.pull_request.title }}
+          pr_number: ${{ github.event.pull_request.number }}
+          pr_url: ${{ github.event.pull_request.html_url }}
+          repository: ${{ github.repository }}
+          head_ref: ${{ github.head_ref }}
+          base_ref: ${{ github.base_ref }}
+          pr_body: ${{ github.event.pull_request.body }} 
